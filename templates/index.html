@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">To-Do List</h1>
+
+        <!-- Mostrar el usuario actual -->
+        {% if current_user %}
+        <div class="alert alert-info">
+            <strong>Usuario activo:</strong> {{ current_user.username }}
+        </div>
+        {% endif %}
+
+        <!-- Sección principal en cuadrícula -->
+        <div class="row">
+            <!-- Proyectos -->
+            <div class="col-md-4">
+                <div class="card shadow mb-4">
+                    <div class="card-body">
+                        <h2>Proyectos</h2>
+                        <!-- Formulario para agregar proyectos -->
+                        <form action="/project" method="POST" id="projectForm" class="mb-3">
+                            <!-- Campo oculto para ID -->
+                            <input type="hidden" name="id" id="projectId">
+                            <div class="mb-3">
+                                <input type="text" class="form-control" name="name" id="projectName" placeholder="Nombre del Proyecto" required>
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" name="description" id="projectDescription" placeholder="Descripción"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Guardar Proyecto</button>
+                        </form>
+                        
+                        
+                        <!-- Lista de proyectos -->
+                        <ul class="list-group">
+                            {% for project in projects %}
+                            <li class="list-group-item">
+                                <strong>{{ project.name }}</strong><br>
+                                {{ project.description or 'Sin descripción' }}
+                                <div class="mt-2">
+                                    <button class="btn btn-warning btn-sm" onclick="populateProjectForm('{{ project.id }}', '{{ project.name }}', '{{ project.description }}')">Editar</button>
+                                    <a href="/delete_project/{{ project.id }}" class="btn btn-danger btn-sm">Eliminar</a>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tareas -->
+            <div class="col-md-4">
+                <div class="card shadow mb-4">
+                    <div class="card-body">
+                        <h2>Tareas</h2>
+                        <!-- Formulario para agregar tareas -->
+                        <form action="/task" method="POST" id="taskForm" class="mb-3">
+                            <!-- Campo oculto para ID -->
+                            <input type="hidden" name="id" id="taskId">
+                            <div class="mb-3">
+                                <input type="text" class="form-control" name="title" id="taskTitle" placeholder="Título de la Tarea" required>
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" name="description" id="taskDescription" placeholder="Descripción"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <select class="form-control" name="project_id" id="taskProject" required>
+                                    <option value="" disabled selected>Seleccionar Proyecto</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Guardar Tarea</button>
+                        </form>
+                        
+                        <!-- Lista de tareas -->
+                        <ul class="list-group">
+                            {% for task in tasks %}
+                            <li class="list-group-item">
+                                <strong>{{ task.title }}</strong><br>
+                                {{ task.description or 'Sin descripción' }}<br>
+                                <small>Proyecto: {{ task.project_id }}</small>
+                                <div class="mt-2">
+                                    <!-- Botón Editar -->
+                                    <button 
+                                        class="btn btn-warning btn-sm" 
+                                        onclick="populateTaskForm('{{ task.id }}', '{{ task.title }}', '{{ task.description }}', '{{ task.project_id }}')">
+                                        Editar
+                                    </button>
+                                    <!-- Botón Eliminar -->
+                                    <a href="/delete_task/{{ task.id }}" class="btn btn-danger btn-sm">Eliminar</a>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comentarios -->
+            <div class="col-md-4">
+                <div class="card shadow mb-4">
+                    <div class="card-body">
+                        <h2>Comentarios</h2>
+                        <!-- Formulario para agregar comentarios -->
+                        <form action="/comment" method="POST" id="commentForm" class="mb-3">
+                            <!-- Campo oculto para ID -->
+                            <input type="hidden" name="id" id="commentId">
+                            <div class="mb-3">
+                                <select class="form-control" name="task_id" id="commentTask" required>
+                                    <option value="" disabled selected>Seleccionar Tarea</option>
+                                    {% for task in tasks %}
+                                    <option value="{{ task.id }}">{{ task.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" name="content" id="commentContent" placeholder="Comentario" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Guardar Comentario</button>
+                        </form>
+                        
+                        <!-- Lista de comentarios -->
+                        <ul class="list-group">
+                            {% for comment in comments %}
+                            <li class="list-group-item">
+                                {{ comment.content }}<br>
+                                <small>Tarea: {{ comment.task_id }} | Usuario: {{ comment.user_id }}</small>
+                                <div class="mt-2">
+                                    <!-- Botón Editar -->
+                                    <button 
+                                        class="btn btn-warning btn-sm" 
+                                        onclick="populateCommentForm('{{ comment.id }}', '{{ comment.content }}', '{{ comment.task_id }}')">
+                                        Editar
+                                    </button>
+                                    <!-- Botón Eliminar -->
+                                    <a href="/delete_comment/{{ comment.id }}" class="btn btn-danger btn-sm">Eliminar</a>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+<script>
+   function populateProjectForm(id, name, description) {
+    document.getElementById('projectId').value = id; // Asignar ID al campo oculto
+    document.getElementById('projectName').value = name; // Asignar nombre
+    document.getElementById('projectDescription').value = description; // Asignar descripción
+}
+
+</script>
+
+<script>
+    function populateTaskForm(id, title, description, projectId) {
+        document.getElementById('taskId').value = id; // ID oculto
+        document.getElementById('taskTitle').value = title; // Título
+        document.getElementById('taskDescription').value = description; // Descripción
+        document.getElementById('taskProject').value = projectId; // Proyecto asociado
+    }
+</script>
+
+<script>
+    function populateCommentForm(id, content, taskId) {
+        document.getElementById('commentId').value = id; // ID oculto
+        document.getElementById('commentContent').value = content; // Contenido del comentario
+        document.getElementById('commentTask').value = taskId; // ID de la tarea asociada
+    }
+</script>
+
+
+
+
