@@ -9,6 +9,8 @@ template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templat
 app = Flask(__name__, template_folder=template_dir)
 app.secret_key = 'your_secret_key'
 
+
+
 # Página principal: muestra proyectos, tareas y comentarios
 @app.route('/')
 def home():
@@ -26,13 +28,19 @@ def home():
     for record in projects:
         project_list.append(dict(zip(column_names, record)))
 
+    # Crear un diccionario de proyectos para buscar por ID
+    project_dict = {project['id']: project['name'] for project in project_list}
+
     # Obtener todas las tareas
     cursor.execute("SELECT * FROM tasks")
     tasks = cursor.fetchall()
     task_list = []
     column_names = [column[0] for column in cursor.description]
     for record in tasks:
-        task_list.append(dict(zip(column_names, record)))
+        task = dict(zip(column_names, record))
+        # Añadir el nombre del proyecto a cada tarea
+        task['project_name'] = project_dict.get(task['project_id'], 'Sin proyecto')
+        task_list.append(task)
 
     # Obtener todos los comentarios
     cursor.execute("SELECT * FROM comments")
@@ -45,7 +53,15 @@ def home():
     cursor.close()
 
     current_user = {'id': session['user_id'], 'username': session['username']}
-    return render_template('index.html', projects=project_list, tasks=task_list, comments=comment_list, current_user=current_user)
+    return render_template(
+        'index.html', 
+        projects=project_list, 
+        tasks=task_list, 
+        comments=comment_list, 
+        current_user=current_user
+    )
+
+
 
 # Registro de usuarios
 @app.route('/register', methods=['GET', 'POST'])
@@ -107,21 +123,7 @@ def logout():
     flash('Has cerrado sesión.', 'info')
     return redirect(url_for('login'))
 
-# Agregar proyecto
-# @app.route('/project', methods=['POST'])
-# def add_project():
-#     name = request.form['name']
-#     description = request.form.get('description', '')
 
-#     if name:
-#         cursor = db.database.cursor()
-#         sql = "INSERT INTO projects (name, description) VALUES (%s, %s)"
-#         data = (name, description)
-#         cursor.execute(sql, data)
-#         db.database.commit()
-#         cursor.close()
-
-#     return redirect(url_for('home'))
 
 @app.route('/project', methods=['POST'])
 def add_or_edit_project():
@@ -147,22 +149,7 @@ def add_or_edit_project():
 
 
 
-# Agregar tarea
-# @app.route('/task', methods=['POST'])
-# def add_task():
-#     title = request.form['title']
-#     description = request.form.get('description', '')
-#     project_id = request.form['project_id']
 
-#     if title and project_id:
-#         cursor = db.database.cursor()
-#         sql = "INSERT INTO tasks (title, description, project_id) VALUES (%s, %s, %s)"
-#         data = (title, description, project_id)
-#         cursor.execute(sql, data)
-#         db.database.commit()
-#         cursor.close()
-
-#     return redirect(url_for('home'))
 
 @app.route('/task', methods=['POST'])
 def add_or_edit_task():
